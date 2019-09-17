@@ -3,7 +3,7 @@ FROM php:fpm
 
 #Variáveis de ambiente
 ARG HOME
-ARG URL_PROXY=http://10.6.156.114:3128
+ARG URL_PROXY
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV PASTA_TEMPORARIA /tmp
@@ -40,14 +40,22 @@ RUN apt-get update && apt-get -y install wget bsdtar libaio1 && \
  rm -rf /var/lib/apt/lists/* && \
  php -v
 
-RUN wget http://php.net/distributions/php-7.1.6.tar.gz  --no-check-certificate && \
+RUN pear config-set http_proxy http://${URL_PROXY}
+RUN pecl channel-update pecl.php.net
+RUN echo 'shared,instantclient,/usr/local/instantclient' | pecl install -f oci8
+
+#PHP-7.3.9
+#PHP-7.2.22
+#PHP-7.1.32
+
+RUN wget http://php.net/distributions/php-7.3.9.tar.gz  --no-check-certificate && \
     mkdir php_oci && \
-    mv php-7.1.6.tar.gz ./php_oci
+    mv php-7.3.9.tar.gz ./php_oci
 WORKDIR php_oci
-RUN tar xfvz php-7.1.6.tar.gz
-WORKDIR php-7.1.6/ext/pdo_oci
+RUN tar xfvz php-7.3.9.tar.gz
+WORKDIR php-7.3.9/ext/pdo_oci
 RUN phpize && \
-    ./configure --with-pdo-oci=instantclient,/usr/local/instantclient,12.1 && \
+    ./configure --with-pdo-oci=shared,instantclient,/usr/local/instantclient,12.1 && \
     make && \
     make install && \
     echo extension=pdo_oci.so > /usr/local/etc/php/conf.d/pdo_oci.ini && \
